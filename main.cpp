@@ -1,4 +1,5 @@
 ﻿#include <iostream>
+#include <fstream>
 using namespace std;
 
 
@@ -16,16 +17,38 @@ unsigned sizeTree(Node* root, unsigned size = 0) {
   return size;
 }
 
-void printTree(Node* tree, int level = 0) {
+void printTree(Node* tree, int level = 0, bool isRight = false) {
   if (tree == NULL) return;
+  printTree(tree->right, level + 1, true);
 
-  printTree(tree->right, level + 1);
+  if (!level) cout << "-->"; // марафет для корня дерева
+  else cout << "   ";
 
-  for (int i = 0; i < level; i++) cout << "    "; // отступ для уровня
+  for (int i = 0; i < level; i++) {
+    if (i + 1 == level) isRight ? cout << ".-->" : cout << "`-->"; // отступ для уровня
+    else cout << "    ";
+  }
   
-  cout << tree->key << endl;
+  cout << tree->key << "\n";
 
   printTree(tree->left, level + 1);
+}
+
+void printTreeToFile(Node* tree, ofstream& db, int level = 0, bool isRight = false) {
+  if (tree == NULL) return;
+  printTreeToFile(tree->right, db, level + 1, true);
+
+  if (!level) db << "-->"; // марафет для корня дерева
+  else db << "   ";
+
+  for (int i = 0; i < level; i++) {
+    if (i + 1 == level) isRight ? db << ".-->" : db << "`-->"; // отступ для уровня
+    else db << "    ";
+  }
+  
+  db << tree->key << "\n";
+
+  printTreeToFile(tree->left, db, level + 1);
 }
 
 Node* search(int key, Node* root) {
@@ -37,17 +60,19 @@ Node* search(int key, Node* root) {
   return NULL;
 }
 
-void insert(int key, Node* root) {                   
+void insert(Node* root, int key) { 
+  if (key == root->key) return;
+
   if (key < root->key) {
-    if (root->left != NULL) insert(key, root->left);
+    if (root->left != NULL) insert(root->left, key);
     else {
       root->left = new Node;
       root->left->key = key;
       root->left->left = NULL; 
       root->left->right = NULL;
     }
-  } else if (key >= root->key) {
-    if (root->right != NULL) insert(key, root->right);
+  } else {
+    if (root->right != NULL) insert(root->right, key);
     else {
       root->right = new Node;
       root->right->key = key;
@@ -70,6 +95,27 @@ int getRandomValueFromRange(int leftLimit, int rightLimit) {
     return leftLimit + rand() % (rightLimit - leftLimit + 1);
 }
 
+// void readTreeFromFile(Node* root) {
+//   ifstream database("tree.txt");
+// 	if (database.is_open()) {
+// 		char data[1];
+// 		while (database.getline(data, DATA_SIZE)) {
+
+//     }
+// 		database.close();
+// 		return;
+// 	}
+// }
+
+void writeTreeToFile(Node* root) {
+  ofstream database("tree.txt");
+	if (!database.is_open()) {
+	  cout << '\n' << "Saving error!";
+	} else {
+    printTreeToFile(root, database);
+  }
+}
+
 
 int main() {
   setlocale(LC_ALL, "Russian");
@@ -77,19 +123,22 @@ int main() {
   Node* root = new Node{10};
   root->left = new Node{6};
   root->right = new Node{19};
-  root->left->left = new Node{-2};
-  root->left->left->right = new Node{-12};
-  root->left->left->right->right = new Node{-22};
+  root->left->left = new Node{2};
+  root->left->left->right = new Node{3};
+  root->left->left->right->right = new Node{4};
   root->left->right = new Node{6};
-  root->right->left = new Node{-7};
-  root->right->right = new Node{-10};
+  root->right->left = new Node{11};
+  root->right->right = new Node{29};
 
   printTree(root);
+  // insert(root, 18);
+  // printTree(root);
+
   short int workPoint;
 
   while(true) {
     cout << "\nNavigation\n"
-         << "N) ????\n";
+         << "2) Print tree\n";
 
     cin.clear(); // Clearing the input stream from possible errors
     cin.sync();
@@ -99,6 +148,13 @@ int main() {
 
     switch (workPoint) {   
       case 1: {
+        break;
+      }
+      case 2: {
+        cout << "\nBinary tree now on your screens!!11!1:\n";
+        printTree(root);
+        cout << "\n(And in tree.txt file)\n";
+        writeTreeToFile(root);
         break;
       }
       default: {
