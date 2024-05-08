@@ -2,6 +2,7 @@
 #include <fstream>
 using namespace std;
 
+#define MAX_STRING_SIZE 50
 
 struct Node {
   int key;
@@ -51,6 +52,15 @@ void printTreeToFile(Node* tree, ofstream& db, int level = 0, bool isRight = fal
   printTreeToFile(tree->left, db, level + 1);
 }
 
+void printNode(Node* node) {
+  if (node == NULL) return;
+  cout << "\nNode:"
+  << "\n L: " << node->left
+  << "\n Key: " << node->key
+  << "\n R: " << node->right
+  << "\n";
+}
+
 Node* search(int key, Node* root) {
   if (root != NULL) {
     if (key == root->key) return root;
@@ -60,7 +70,14 @@ Node* search(int key, Node* root) {
   return NULL;
 }
 
-void insert(Node* root, int key) { 
+void insert(Node* &root, int key) { 
+  if (root == NULL) {
+    root = new Node;
+    root->key = key;
+    root->left = NULL; 
+    root->left = NULL;
+    return;
+  } 
   if (key == root->key) return;
 
   if (key < root->key) {
@@ -87,25 +104,30 @@ void destroyTree(Node* &root) {
 
   destroyTree(root->left);
   destroyTree(root->right);
+
   delete root;
   root = NULL;
+
 }
 
 int getRandomValueFromRange(int leftLimit, int rightLimit) {
     return leftLimit + rand() % (rightLimit - leftLimit + 1);
 }
 
-// void readTreeFromFile(Node* root) {
-//   ifstream database("tree.txt");
-// 	if (database.is_open()) {
-// 		char data[1];
-// 		while (database.getline(data, DATA_SIZE)) {
-
-//     }
-// 		database.close();
-// 		return;
-// 	}
-// }
+void readTreeFromFile(Node* &root, char* filename) {
+  ifstream database(filename);
+	if (!database.is_open()) {
+    cout << "\nFile with name " << filename << " doesn't exists!\n";
+    return;
+  }
+  database.seekg(0);
+	char data[MAX_STRING_SIZE];
+	while (database.getline(data, MAX_STRING_SIZE)) insert(root, atoi(data));
+  		
+  database.close();
+	return;
+	
+}
 
 void writeTreeToFile(Node* root) {
   ofstream database("tree.txt");
@@ -119,6 +141,7 @@ void writeTreeToFile(Node* root) {
 
 int main() {
   setlocale(LC_ALL, "Russian");
+  srand(time(0));
 
   Node* root = new Node{10};
   root->left = new Node{6};
@@ -126,7 +149,6 @@ int main() {
   root->left->left = new Node{2};
   root->left->left->right = new Node{3};
   root->left->left->right->right = new Node{4};
-  root->left->right = new Node{6};
   root->right->left = new Node{11};
   root->right->right = new Node{29};
 
@@ -135,9 +157,10 @@ int main() {
   // printTree(root);
 
   short int workPoint;
-
+  short int chooseType;
   while(true) {
     cout << "\nNavigation\n"
+         << "1) Create a new tree\n"
          << "2) Print tree\n";
 
     cin.clear(); // Clearing the input stream from possible errors
@@ -148,6 +171,56 @@ int main() {
 
     switch (workPoint) {   
       case 1: {
+        cout << "\nChoose how you want to init the tree\n"
+        << "\n(1) Enter the size of the tree and fill with random"
+        << "\n(2) Enter the numbers whatever you want"
+        << "\n(3) Read from file\n";
+
+        cin >> chooseType;
+        destroyTree(root);
+        printTree(root);
+
+        switch (chooseType) {
+          case 1: {
+            short elementsCount;
+            cout << "The size of tree is: ";
+            cin >> elementsCount;
+            if (!cin.good()) {
+              cout << "\nYou entered an incorrect value\n";
+              break;
+            }
+            for (int i = 0; i < elementsCount; i++) insert(root, getRandomValueFromRange(-99, 99));
+            break;
+          }
+          case 2: {
+            int item;
+
+            cout << "Enter items, to stop it - enter any char\n";
+
+            cin.clear(); // Clearing the input stream from possible errors
+            cin.sync();
+
+            while (cin >> item) insert(root, item);
+            break;
+          }
+          case 3: {
+            char filename[MAX_STRING_SIZE];
+
+            cout << "Enter filename (with extension, from 0 to " << MAX_STRING_SIZE << " letters, end of name is </>): ";
+            
+            cin.get();
+            cin.getline(filename, MAX_STRING_SIZE, '/');
+            readTreeFromFile(root, filename);
+            break;
+          }
+          default: {
+            cout << "\nYou entered an incorrect value\n";
+            break;
+          }
+        }
+        cout << "\nCreated tree:\n";
+        printTree(root);
+
         break;
       }
       case 2: {
