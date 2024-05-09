@@ -16,10 +16,10 @@ int getRandomValueFromRange(int leftLimit, int rightLimit) {
 }
 
 unsigned sizeTree(Node* root, unsigned size = 0) {
-	if (root == NULL) return 0;
-	
-	size += sizeTree(root->left, size);
-	size += sizeTree(root->right, size);
+  if (root == NULL) return 0;
+  
+  size += sizeTree(root->left, size);
+  size += sizeTree(root->right, size);
   return size;
 }
 
@@ -68,16 +68,16 @@ void printNode(Node* node) {
 
 Node* findMaxNode(Node* root) {
   while (root->right) {
-		root = root->right;
-	}
-	return root;
+    root = root->right;
+  }
+  return root;
 }
 
 Node* findMinNode(Node* root) {
-	while (root->left) {
-		root = root->left;
-	}
-	return root;
+  while (root->left) {
+    root = root->left;
+  }
+  return root;
 }
 
 Node* search(int key, Node* root) {
@@ -176,24 +176,24 @@ void insert(Node* &root, int key) {
 
 void readTreeFromFile(Node* &root, char* filename) {
   ifstream database(filename);
-	if (!database.is_open()) {
+  if (!database.is_open()) {
     cout << "\nFile with name " << filename << " doesn't exists!\n";
     return;
   }
 
-	char data[MAX_STRING_SIZE];
-	while (database.getline(data, MAX_STRING_SIZE)) insert(root, atoi(data));
-  		
+  char data[MAX_STRING_SIZE];
+  while (database.getline(data, MAX_STRING_SIZE)) insert(root, atoi(data));
+      
   database.close();
-	return;
-	
+  return;
+  
 }
 
 void writeTreeToFile(Node* root) {
   ofstream database("tree.txt");
-	if (!database.is_open()) {
-	  cout << '\n' << "Saving error!";
-	} else {
+  if (!database.is_open()) {
+    cout << '\n' << "Saving error!";
+  } else {
     printTreeToFile(root, database);
   }
 }
@@ -345,7 +345,7 @@ int main() {
 
             cout << "\nUpdated Tree:\n";
             printTree(root);
-            
+
             cout << "\nTime to delete: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " mcs" << "\n";
             break;
           }
