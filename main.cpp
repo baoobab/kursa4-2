@@ -1,5 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
+#include <chrono>
 using namespace std;
 
 #define MAX_STRING_SIZE 50
@@ -9,6 +10,10 @@ struct Node {
   Node* left;
   Node* right;
 };
+
+int getRandomValueFromRange(int leftLimit, int rightLimit) {
+    return leftLimit + rand() % (rightLimit - leftLimit + 1);
+}
 
 unsigned sizeTree(Node* root, unsigned size = 0) {
 	if (root == NULL) return 0;
@@ -61,13 +66,83 @@ void printNode(Node* node) {
   << "\n";
 }
 
+Node* findMaxNode(Node* root) {
+  while (root->right) {
+		root = root->right;
+	}
+	return root;
+}
+
+Node* findMinNode(Node* root) {
+	while (root->left) {
+		root = root->left;
+	}
+	return root;
+}
+
 Node* search(int key, Node* root) {
-  if (root != NULL) {
-    if (key == root->key) return root;
-    if (key < root->key) return search(key, root->left);
-    else return search(key, root->right);
-  }
+  if (root == NULL) return NULL;
+    
+  if (key == root->key) return root;
+  if (key < root->key) return search(key, root->left);
+  else return search(key, root->right);
+  
   return NULL;
+}
+
+Node* searchParentByChild(Node* root, Node* child) {
+  if (root == NULL || child == NULL) return NULL;
+    
+  if (root->left == child || root->right == child) return root;
+  if (child->key < root->key) return searchParentByChild(root->left, child);
+  else return searchParentByChild(root->right, child);
+  
+  return NULL;
+}
+
+void destroyTree(Node* &root) {
+  if(root == NULL) return;
+
+  destroyTree(root->left);
+  destroyTree(root->right);
+
+  delete root;
+  root = NULL;
+
+}
+
+void del(Node* &root, int key) {
+  Node* delNode = search(key, root);
+  Node* parentNode = searchParentByChild(root, delNode);
+  if (delNode == NULL) return;
+  if (parentNode == NULL) return destroyTree(root);
+
+  if (delNode->right == NULL && delNode->left == NULL) {
+    delNode->key < parentNode->key ? parentNode->left = NULL : parentNode->right = NULL;
+
+    delete delNode;
+    delNode = NULL;
+    return;
+  } else if (delNode->right == NULL && delNode->left != NULL) {
+    delNode->key < parentNode->key ? parentNode->left = delNode->left : parentNode->right = delNode->left;
+
+    delete delNode;
+    delNode = NULL;
+    return;
+  } else if (delNode->right != NULL && delNode->left == NULL) {
+    delNode->key < parentNode->key ? parentNode->left = delNode->right : parentNode->right = delNode->right;
+
+    delete delNode;
+    delNode = NULL;
+    return;
+  } else {
+    Node* delChild = findMaxNode(delNode->left);
+    int childKey = delChild->key;
+
+    del(delNode, childKey);
+    delNode->key = childKey;
+    return;
+  }
 }
 
 void insert(Node* &root, int key) { 
@@ -99,28 +174,13 @@ void insert(Node* &root, int key) {
   }
 }
 
-void destroyTree(Node* &root) {
-  if(root == NULL) return;
-
-  destroyTree(root->left);
-  destroyTree(root->right);
-
-  delete root;
-  root = NULL;
-
-}
-
-int getRandomValueFromRange(int leftLimit, int rightLimit) {
-    return leftLimit + rand() % (rightLimit - leftLimit + 1);
-}
-
 void readTreeFromFile(Node* &root, char* filename) {
   ifstream database(filename);
 	if (!database.is_open()) {
     cout << "\nFile with name " << filename << " doesn't exists!\n";
     return;
   }
-  database.seekg(0);
+
 	char data[MAX_STRING_SIZE];
 	while (database.getline(data, MAX_STRING_SIZE)) insert(root, atoi(data));
   		
@@ -143,25 +203,20 @@ int main() {
   setlocale(LC_ALL, "Russian");
   srand(time(0));
 
-  Node* root = new Node{10};
-  root->left = new Node{6};
-  root->right = new Node{19};
-  root->left->left = new Node{2};
-  root->left->left->right = new Node{3};
-  root->left->left->right->right = new Node{4};
-  root->right->left = new Node{11};
-  root->right->right = new Node{29};
-
-  printTree(root);
-  // insert(root, 18);
-  // printTree(root);
+  Node* root = NULL; // Указатель на корень дерева
 
   short int workPoint;
   short int chooseType;
+  char actionType;
+
+  auto start = chrono::steady_clock::now();
+  auto end = chrono::steady_clock::now();
+
   while(true) {
     cout << "\nNavigation\n"
          << "1) Create a new tree\n"
-         << "2) Print tree\n";
+         << "2) Print tree (and write to file\n"
+         << "3) Operations with tree\n";
 
     cin.clear(); // Clearing the input stream from possible errors
     cin.sync();
@@ -189,18 +244,21 @@ int main() {
               cout << "\nYou entered an incorrect value\n";
               break;
             }
+            start = chrono::steady_clock::now();
             for (int i = 0; i < elementsCount; i++) insert(root, getRandomValueFromRange(-99, 99));
+            end = chrono::steady_clock::now();
             break;
           }
           case 2: {
             int item;
-
             cout << "Enter items, to stop it - enter any char\n";
 
             cin.clear(); // Clearing the input stream from possible errors
             cin.sync();
 
+            start = chrono::steady_clock::now();
             while (cin >> item) insert(root, item);
+            end = chrono::steady_clock::now();
             break;
           }
           case 3: {
@@ -210,7 +268,9 @@ int main() {
             
             cin.get();
             cin.getline(filename, MAX_STRING_SIZE, '/');
+            start = chrono::steady_clock::now();
             readTreeFromFile(root, filename);
+            end = chrono::steady_clock::now();
             break;
           }
           default: {
@@ -221,13 +281,79 @@ int main() {
         cout << "\nCreated tree:\n";
         printTree(root);
 
+        cout << "\nTime to Create: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " mcs" << "\n";
+
         break;
       }
       case 2: {
+        if (root == NULL) {
+          cout << "\nTree is empty\n"; 
+          break;
+        }
+
         cout << "\nBinary tree now on your screens!!11!1:\n";
         printTree(root);
         cout << "\n(And in tree.txt file)\n";
         writeTreeToFile(root);
+        break;
+      }
+      case 3: {
+        cout << "Choose the action (eng)\n"
+        << "(G) - Get element\n"
+        << "(I) - Insert element\n"
+        << "(D) - Delete element\n";
+        
+        cin >> actionType;
+        cin.clear(); // Clearing the input stream from possible errors
+        cin.sync();
+
+        int data;
+        cout << "Enter an element value: ";
+        cin >> data;
+        if (!cin.good()) {
+          cout << "\nYou entered an incorrect value\n";
+          break;
+        }
+
+        switch (actionType) {
+          case 'G': {
+            start = chrono::steady_clock::now();
+            Node* foundedItem = search(data, root);
+            end = chrono::steady_clock::now();
+
+            if (foundedItem == NULL) cout << "Item not found\n";
+            else cout << "Founded item: " << foundedItem->key << "\n";
+            
+            cout << "\nTime to search: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " mcs" << "\n";
+
+            break;
+          }
+          case 'I': {
+            start = chrono::steady_clock::now();
+            insert(root, data);
+            end = chrono::steady_clock::now();
+            cout << "\nUpdated Tree:\n";
+            printTree(root);
+
+            cout << "\nTime to insert: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " mcs" << "\n";
+            break;
+          }
+          case 'D': {
+            start = chrono::steady_clock::now();
+            del(root, data);
+            end = chrono::steady_clock::now();
+
+            cout << "\nUpdated Tree:\n";
+            printTree(root);
+            
+            cout << "\nTime to delete: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " mcs" << "\n";
+            break;
+          }
+          default: {
+            cout << "\nYou entered an incorrect value\n";
+            break;
+          }
+        }
         break;
       }
       default: {
