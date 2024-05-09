@@ -198,6 +198,30 @@ void writeTreeToFile(Node* root) {
   }
 }
 
+void preOrderTravers(Node* root) { // прямой обход - сверху вниз
+    if (root) {
+        cout << root->key << " ";
+        preOrderTravers(root->left);
+        preOrderTravers(root->right);
+    }
+}
+
+void inOrderTravers(Node* root) { // симм. обход - слева направа
+    if (root) {
+        inOrderTravers(root->left);
+        cout << root->key << " ";
+        inOrderTravers(root->right);
+    }
+}
+
+void postOrderTravers(Node* root) { // обратный обход - снизу вверх
+    if (root) {
+        postOrderTravers(root->left);
+        postOrderTravers(root->right);
+        cout << root->key << " ";
+    }
+}
+
 
 int main() {
   setlocale(LC_ALL, "Russian");
@@ -214,14 +238,16 @@ int main() {
 
   while(true) {
     cout << "\nNavigation\n"
-         << "1) Create a new tree\n"
-         << "2) Print tree (and write to file\n"
-         << "3) Operations with tree\n";
+         << "(1) Create a new tree\n"
+         << "(2) Print tree (and write to file\n"
+         << "(3) Operations with tree\n"
+         << "(4) Travers tree\n"
+         << "(5) ????\n";
 
     cin.clear(); // Clearing the input stream from possible errors
     cin.sync();
 
-    cout << "Select point of work (number 1 to N): ";
+    cout << "Select point of work (number 1 to 5): ";
     cin >> workPoint;
 
     switch (workPoint) {   
@@ -233,7 +259,6 @@ int main() {
 
         cin >> chooseType;
         destroyTree(root);
-        printTree(root);
 
         switch (chooseType) {
           case 1: {
@@ -287,7 +312,7 @@ int main() {
       }
       case 2: {
         if (root == NULL) {
-          cout << "\nTree is empty\n"; 
+          cout << "\nThe tree is empty\n"; 
           break;
         }
 
@@ -356,8 +381,26 @@ int main() {
         }
         break;
       }
+      case 4: {
+        if (root == NULL) {
+          cout << "\nThe tree is empty\n";
+          break;
+        }
+
+        cout << "\nPre-order: ";
+        preOrderTravers(root);
+        cout << "\nIn-order: ";
+        inOrderTravers(root);
+        cout << "\nPast-order: ";
+        postOrderTravers(root);
+
+        break;
+      }
+      case 5: {
+        break;
+      }
       default: {
-        cout << "\n" << "You did not enter a number in the range from 1 to N";
+        cout << "\n" << "You didn't enter a number in the range from 1 to 5";
         break;
       }
     }
