@@ -1,9 +1,18 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <chrono>
+#include <string>
 using namespace std;
 
 #define MAX_STRING_SIZE 50
+#define MAX_TASKS_COUNT 5
+
+enum TasksTopics {
+  CREATE = 0,
+  READ = 1,
+  UPDATE = 2,
+  DELETE = 3
+};
 
 struct Node {
   int key;
@@ -189,12 +198,11 @@ void readTreeFromFile(Node* &root, char* filename) {
   
 }
 
-void writeTreeToFile(Node* root) {
-  ofstream database("tree.txt");
-  if (!database.is_open()) {
+void writeTreeToFile(Node* root, ofstream& db) {
+  if (!db.is_open()) {
     cout << '\n' << "Saving error!";
   } else {
-    printTreeToFile(root, database);
+    printTreeToFile(root, db, false);
   }
 }
 
@@ -312,6 +320,82 @@ void printArray(int* &arr, const unsigned size) {
   for (int i = 0; i < size; i++) printElement(arr[i], i);
 }
 
+void generateTopicHead(int topic, string& head) {
+  switch (topic) {
+    case TasksTopics::CREATE: {
+      head = "***Creation tasks***";
+      return;
+    }
+    case TasksTopics::READ: {
+      head = "\n\n***Search tasks***";
+      return;
+    }
+    case TasksTopics::UPDATE: {
+      head = "\n\n***Insert tasks***";
+      return;
+    }
+    case TasksTopics::DELETE: {
+      head = "\n\n***Removal tasks***";
+      return;
+    }
+  }
+}
+
+void generateTaskCondition(int topic, string& head, Node* &taskRoot) {
+  int elementsCount = getRandomValueFromRange(7, 15);
+  int nodesMinBorder = getRandomValueFromRange(0, 100);
+  int nodesMaxBorder = nodesMinBorder + elementsCount - 1;
+
+  switch (topic) {
+    case TasksTopics::CREATE: {
+      head = "\nCreate a tree of ";
+      head += to_string(elementsCount);
+      head += " elements, with nodes from ";
+      head += to_string(nodesMinBorder);
+      head += " to ";
+      head += to_string(nodesMaxBorder);
+      break;
+    }
+    case TasksTopics::READ: {
+      for (int i = 0; i < elementsCount; i++) insert(taskRoot, getRandomValueFromRange(0, 10));
+      head = "\nCheck if the value ";
+      head += to_string(getRandomValueFromRange(0, 10));
+      head += " exists in the tree below\n";
+      break;
+    }
+    default: { return; }
+  }
+}
+
+void writeTasksInFiles(unsigned tasksCount) {
+  // ofstream dbk("outputKey.txt");
+  // ofstream dba("outputAns.txt");
+  ofstream dbt("outputTask.txt");
+  if (!dbt.is_open()) {
+    cout << '\n' << "Saving error!";
+    return;
+  }
+
+  string topicHead; // заголовок раздела
+  string taskCondition; // условие задачи
+  string taskShortAnswer; // короткий ответ на задачу
+  string taskAnswer; // полный ответ на задачу
+  
+  Node* taskRoot = NULL;
+
+  for (int topic = 0; topic < 4; topic++) { // для разделов задач
+    generateTopicHead(topic, topicHead);
+    dbt << topicHead;
+    for (int taskIdx = 0; taskIdx < tasksCount; taskIdx++) { // для задач внутри раздела
+      generateTaskCondition(topic, taskCondition, taskRoot);
+      dbt << taskCondition;
+      
+      if (taskRoot) writeTreeToFile(taskRoot, dbt);
+      destroyTree(taskRoot);
+    }
+  }
+  dbt.close();
+}
 
 int main() {
   setlocale(LC_ALL, "Russian");
@@ -335,7 +419,7 @@ int main() {
          << "(2) Print tree (and write to file\n"
          << "(3) Operations with tree\n"
          << "(4) Travers tree\n"
-         << "(5) ????\n"
+         << "(5) Generate quiz\n"
          << "(6) Create a new array\n"
          << "(7) Operations with array\n";
 
@@ -414,7 +498,9 @@ int main() {
         cout << "\nBinary tree now on your screens!!11!1:\n";
         printTree(root);
         cout << "\n(And in tree.txt file)\n";
-        writeTreeToFile(root);
+        ofstream db("tree.txt");
+        writeTreeToFile(root, db);
+        db.close();
         break;
       }
       case 3: {
@@ -492,6 +578,13 @@ int main() {
         break;
       }
       case 5: {
+        unsigned tasksCount;
+        cout << "\nEnter the count of tasks for each topic (create, read, update, delete)"
+        << "\n(max count of tasks is " << MAX_TASKS_COUNT << "): "; 
+        cin >> tasksCount;
+        if (tasksCount > MAX_TASKS_COUNT) tasksCount = MAX_TASKS_COUNT;
+        writeTasksInFiles(tasksCount);
+        cout << "\nTasks generated succesfully";
         break;
       }
       case 6: {
