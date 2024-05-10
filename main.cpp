@@ -222,12 +222,105 @@ void postOrderTravers(Node* root) { // обратный обход - снизу 
     }
 }
 
+// Array functions
+
+bool checkArrayIndex(int* &arr, const unsigned size, unsigned idx) {
+  return (idx >= 0 && idx < size);
+}
+
+int countArrayEntries(int* &arr, const unsigned size, int data) {
+  int counter = 0;
+  for (int i = 0; i < size; i++) if (arr[i] == data) counter++;
+  return counter;
+}
+
+void printElement(int data, unsigned idx = -1) {
+  cout << "\nItem\n"
+  << " Data: " << data << "\n";
+  if (idx != -1) cout << " Index: " << idx << "\n";
+}
+
+int findArrayItemByIndex(int* &arr, const unsigned size, const unsigned idx) {
+  if (!checkArrayIndex(arr, size, idx)) {
+    cout << "\nIncorrect index value\n";
+    return 0;
+  }
+  for (int i = 0; i < size; i++) if (i == idx) return arr[i];
+  return 0;
+}
+
+unsigned getIndexOfArrayItem(int* &arr, const unsigned size, int data, unsigned startIdx = 0) {
+  for (int i = startIdx; i < size; i++) if (arr[i] == data) return i;
+  return -1;
+}
+
+void printArrayItemsByData(int* &arr, const unsigned size, int data) {
+  for (int i = 0; i < size; i++) {
+    if (arr[i] == data) printElement(arr[i], i);
+  }
+}
+
+void delArrayItemByIndex(int* &arr, unsigned &size, unsigned idx) {
+  if (!checkArrayIndex(arr, size, idx)) {
+    cout << "\nIncorrect index value\n";
+    return;
+  }
+  int* res = new int[size - 1];
+  for (int i = 0, j = 0; i < size; i++) {
+    if (i != idx) {
+      res[j] = arr[i];
+      j++;
+    }
+  }
+  delete[] arr;
+  size--;
+  arr = res;
+}
+
+void delArrayItemByValue(int* &arr, unsigned &size, int data) {
+  while (countArrayEntries(arr, size, data) > 0) {
+    int index = getIndexOfArrayItem(arr, size, data);
+    delArrayItemByIndex(arr, size, index);
+  }
+}
+
+void insArrayItem(int* &arr, unsigned &size, unsigned idx, int data){
+  if (!checkArrayIndex(arr, size, idx) && idx != size) {
+    cout << "\nIncorrect index value\n";
+    return;
+  }
+  size++;
+  int *res = new int[size];
+  for (int i = 0; i < idx; i++) {
+      res[i] = arr[i];
+  }
+  res[idx] = data;
+  for (int i = idx; i < size - 1; i++) {
+      res[i+1] = arr[i];
+  }
+  delete[] arr;
+  arr = res;
+}
+
+void clearArray(int* &arr, unsigned &size) {
+  delete[] arr;
+  arr = NULL;
+  size = 0;
+}
+
+void printArray(int* &arr, const unsigned size) {
+  for (int i = 0; i < size; i++) printElement(arr[i], i);
+}
+
 
 int main() {
   setlocale(LC_ALL, "Russian");
   srand(time(0));
 
-  Node* root = NULL; // Указатель на корень дерева
+  Node* root = NULL; // корень дерева
+
+  int *arr = NULL; // дин. массив (для сравнения времени операций)
+  unsigned arrSize = 0;
 
   short int workPoint;
   short int chooseType;
@@ -242,7 +335,9 @@ int main() {
          << "(2) Print tree (and write to file\n"
          << "(3) Operations with tree\n"
          << "(4) Travers tree\n"
-         << "(5) ????\n";
+         << "(5) ????\n"
+         << "(6) Create a new array\n"
+         << "(7) Operations with array\n";
 
     cin.clear(); // Clearing the input stream from possible errors
     cin.sync();
@@ -397,6 +492,159 @@ int main() {
         break;
       }
       case 5: {
+        break;
+      }
+      case 6: {
+        cout << "Choose the way (eng)\n"
+        << "(A) - Enter the dimension and fill it with random\n"
+        << "(B) - Enter the numbers whatever you want\n";
+        unsigned curSize = 0;
+        char creatingType;
+        cin >> creatingType;
+        if (!cin.good()) {
+          cout << "\nYou entered an incorrect value\n";
+          break;
+        }
+        if (creatingType == 'B' || creatingType == 'b') {
+          cout << "Enter items, to stop it - enter any char\n";
+          int item;
+          cin.clear(); // Clearing the input stream from possible errors
+          cin.sync();
+
+          clearArray(arr, arrSize);
+          start = chrono::steady_clock::now();
+          while (cin >> item) insArrayItem(arr, curSize, curSize, item);
+          end = chrono::steady_clock::now();
+          arrSize = curSize;
+
+          cout << "\nList length: " << arrSize << "\n";
+        } else {
+          cout << "\nEnter elements count: ";
+          clearArray(arr, arrSize);
+          
+          cin >> arrSize;
+          if (!cin.good()) {
+            cout << "\nYou entered an incorrect value\n";
+            break;
+          }
+          start = chrono::steady_clock::now();
+          for (int i = 0; i < arrSize; i++) {
+            insArrayItem(arr, curSize, i, getRandomValueFromRange(0, 99));
+          }
+          end = chrono::steady_clock::now();
+        }
+        printArray(arr, arrSize);
+        cout << "\nTime to Create: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " mcs" << "\n";
+        break;
+      }
+      case 7: {
+        cout << "Choose the action (eng)\n"
+        << "(G) - Get element\n"
+        << "(I) - Insert element\n"
+        << "(D) - Delete element\n";
+
+        int foundedItem = 0;
+        int data;
+        unsigned index;
+
+        cin >> actionType;
+
+        switch (actionType) {
+          case 'G': {
+            cout << "By index or by value (I/V)?: ";
+            cin >> actionType;
+            if (!cin.good()) {
+              cout << "\nYou entered an incorrect value\n";
+              break;
+            }
+            if (actionType == 'I' || actionType == 'i') {
+              cout << "Enter an index of element (length is " << arrSize << "): ";
+              cin >> index;
+              if (!cin.good()) {
+                cout << "\nYou entered an incorrect value\n";
+                break;
+              }
+              start = chrono::steady_clock::now();
+              foundedItem = findArrayItemByIndex(arr, arrSize, index);
+              end = chrono::steady_clock::now();
+
+              if (!foundedItem) {
+                cout << "\nYou entered an incorrect value\n";
+                break;
+              }
+              printElement(foundedItem);
+            } else {
+              cout << "Enter a value of element: ";
+              cin >> data;
+              if (!cin.good()) {
+                cout << "\nYou entered an incorrect value\n";
+                break;
+              }
+              start = chrono::steady_clock::now();
+              printArrayItemsByData(arr, arrSize, data);
+              end = chrono::steady_clock::now();
+            }
+            cout << "\nTime to Get: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " mcs" << "\n";
+            break;
+          }
+          case 'I': {
+            cout << "Enter an index of new element (length is " << arrSize << "): ";
+            cin >> index;
+            if (!cin.good()) {
+              cout << "\nYou entered an incorrect value\n";
+              break;
+            }
+            cout << "Enter a value of element (or enter any char to random): ";
+            cin >> data;
+            start = chrono::steady_clock::now();
+            if (!cin.good()) insArrayItem(arr, arrSize, index, getRandomValueFromRange(0, 99));
+            else insArrayItem(arr, arrSize, index, data);
+            end = chrono::steady_clock::now();
+
+            printArray(arr, arrSize);
+            cout << "\nTime to Insert: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " mcs" << "\n";
+            break;
+          }
+          case 'D': {
+            cout << "By index or by value (I/V)?: ";
+            cin >> actionType;
+            if (!cin.good()) {
+              cout << "\nYou entered an incorrect value\n";
+              break;
+            }
+            if (actionType == 'I' || actionType == 'i') {
+              cout << "Enter an index of element (length is " << arrSize << "): ";
+              cin >> index;
+              if (!cin.good()) {
+                cout << "\nYou entered an incorrect value\n";
+                break;
+              }
+              start = chrono::steady_clock::now();
+              delArrayItemByIndex(arr, arrSize, index);
+              end = chrono::steady_clock::now();
+            } else {
+              cout << "Enter a value of element: ";
+              cin >> data;
+              if (!cin.good()) {
+                cout << "\nYou entered an incorrect value\n";
+                break;
+              }
+              start = chrono::steady_clock::now();
+              delArrayItemByValue(arr, arrSize, data);
+              end = chrono::steady_clock::now();
+            }
+
+            cout << "\nArray after (length is " << arrSize << "):\n";
+            printArray(arr, arrSize);
+            cout << "\nTime to Delete: " << chrono::duration_cast<chrono::microseconds>(end - start).count() << " mcs" << "\n";
+            break;
+          }
+          default: {
+            cout << "\nYou entered an incorrect value\n";
+            break;
+          }
+        }
+
         break;
       }
       default: {
