@@ -428,13 +428,14 @@ void generateTaskCondition(int topic, string& head, Node* &taskRoot, int* taskVa
       return;
     }
     case TasksTopics::DELETE: {
-      for (int i = 0; i < elementsCount; i++) insert(taskRoot, getRandomValueFromRange(-30, 30));
-
-      head = "\nCheck what the tree will look like after removing node with value ";
       int* arr = NULL;
       unsigned arrSize = 0;
+
+      for (int i = 0; i < elementsCount; i++) insert(taskRoot, getRandomValueFromRange(-30, 30));
       convertTreeToArray(taskRoot, arr, arrSize);
       taskValues[0] = arr[rand() % arrSize];
+
+      head = "\nCheck what the tree will look like after removing node with value ";
       head += to_string(taskValues[0]);
       head += " from it\n";
       return;
