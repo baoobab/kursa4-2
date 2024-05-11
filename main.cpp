@@ -6,6 +6,7 @@ using namespace std;
 
 #define MAX_STRING_SIZE 50
 #define MAX_TASKS_COUNT 5
+#define TASK_TOPICS_COUNT 4
 
 enum TasksTopics {
   CREATE = 0,
@@ -110,21 +111,42 @@ Node* searchParentByChild(Node* root, Node* child) {
 }
 
 void destroyTree(Node* &root) {
-  if(root == NULL) return;
-
-  destroyTree(root->left);
-  destroyTree(root->right);
-
-  delete root;
-  root = NULL;
-
+  if(root != NULL) {
+    destroyTree(root->left);
+    destroyTree(root->right);
+    delete root;
+    root = NULL;
+  }
 }
 
-void del(Node* &root, int key) {
+void del(Node* root, int key) {
   Node* delNode = search(key, root);
   Node* parentNode = searchParentByChild(root, delNode);
+
   if (delNode == NULL) return;
-  if (parentNode == NULL) return destroyTree(root);
+  if (parentNode == NULL) { // если удаляемый узел - корень
+    if (delNode->right != NULL && delNode->left != NULL) {
+      Node* delChild = findMaxNode(delNode->left);
+      int childKey = delChild->key;
+
+      del(delNode, childKey);
+      delNode->key = childKey;
+      return;
+    }
+
+    if (delNode->right != NULL) {
+      root = delNode->right;
+      delete delNode;
+      return;
+    } else if (delNode->left != NULL) {
+      root = delNode->right;
+      delete delNode;
+      return;
+    }
+
+    destroyTree(root);
+    return;
+  }
 
   if (delNode->right == NULL && delNode->left == NULL) {
     delNode->key < parentNode->key ? parentNode->left = NULL : parentNode->right = NULL;
@@ -162,7 +184,6 @@ void insert(Node* &root, int key) {
     root->left = NULL;
     return;
   } 
-  if (key == root->key) return;
 
   if (key < root->key) {
     if (root->left != NULL) insert(root->left, key);
@@ -172,7 +193,7 @@ void insert(Node* &root, int key) {
       root->left->left = NULL; 
       root->left->right = NULL;
     }
-  } else {
+  } else if (key > root->key) {
     if (root->right != NULL) insert(root->right, key);
     else {
       root->right = new Node;
@@ -202,32 +223,32 @@ void writeTreeToFile(Node* root, ofstream& db) {
   if (!db.is_open()) {
     cout << '\n' << "Saving error!";
   } else {
-    printTreeToFile(root, db, false);
+    printTreeToFile(root, db);
   }
 }
 
 void preOrderTravers(Node* root) { // прямой обход - сверху вниз
-    if (root) {
-        cout << root->key << " ";
-        preOrderTravers(root->left);
-        preOrderTravers(root->right);
-    }
+  if (root) {
+    cout << root->key << " ";
+    preOrderTravers(root->left);
+    preOrderTravers(root->right);
+  }
 }
 
-void inOrderTravers(Node* root) { // симм. обход - слева направа
-    if (root) {
-        inOrderTravers(root->left);
-        cout << root->key << " ";
-        inOrderTravers(root->right);
-    }
+void inOrderTravers(Node* root) { // симм. обход - слева направо
+  if (root) {
+    inOrderTravers(root->left);
+    cout << root->key << " ";
+    inOrderTravers(root->right);
+  }
 }
 
 void postOrderTravers(Node* root) { // обратный обход - снизу вверх
-    if (root) {
-        postOrderTravers(root->left);
-        postOrderTravers(root->right);
-        cout << root->key << " ";
-    }
+  if (root) {
+    postOrderTravers(root->left);
+    postOrderTravers(root->right);
+    cout << root->key << " ";
+  }
 }
 
 // Array functions
@@ -320,6 +341,28 @@ void printArray(int* &arr, const unsigned size) {
   for (int i = 0; i < size; i++) printElement(arr[i], i);
 }
 
+void swapArrayElementsByIndexes(int* &arr, const unsigned size, unsigned idx1, unsigned idx2) {
+  if (!checkArrayIndex(arr, size, idx1) || !checkArrayIndex(arr, size, idx2)) {
+    cout << "\nIncorrect index value(-s)\n";
+    return;
+  }
+  int buffer = arr[idx1];
+  arr[idx1] = arr[idx2];
+  arr[idx2] = buffer;
+}
+
+void arrShuffle(int* arr, const int size) {
+  for (int i = size - 1; i >= 1; i--) {
+    int j = rand() % (i + 1);
+    int tmp = arr[j];
+    arr[j] = arr[i];
+    arr[i] = tmp;
+  }
+}
+
+//
+
+
 void generateTopicHead(int topic, string& head) {
   switch (topic) {
     case TasksTopics::CREATE: {
@@ -341,8 +384,16 @@ void generateTopicHead(int topic, string& head) {
   }
 }
 
-void generateTaskCondition(int topic, string& head, Node* &taskRoot) {
-  int elementsCount = getRandomValueFromRange(7, 15);
+void convertTreeToArray(Node* root, int* &arr, unsigned& size) {
+  if (root) {
+    convertTreeToArray(root->left, arr, size);
+    insArrayItem(arr, size, size, root->key);
+    convertTreeToArray(root->right, arr, size);
+  }
+}
+
+void generateTaskCondition(int topic, string& head, Node* &taskRoot, int* taskValues) {
+  int elementsCount = getRandomValueFromRange(6, 12);
   int nodesMinBorder = getRandomValueFromRange(0, 100);
   int nodesMaxBorder = nodesMinBorder + elementsCount - 1;
 
@@ -354,23 +405,121 @@ void generateTaskCondition(int topic, string& head, Node* &taskRoot) {
       head += to_string(nodesMinBorder);
       head += " to ";
       head += to_string(nodesMaxBorder);
-      break;
+      taskValues[0] = nodesMinBorder;
+      taskValues[1] = nodesMaxBorder;
+      return;
     }
     case TasksTopics::READ: {
+      taskValues[0] = getRandomValueFromRange(0, 10);
       for (int i = 0; i < elementsCount; i++) insert(taskRoot, getRandomValueFromRange(0, 10));
+
       head = "\nCheck if the value ";
-      head += to_string(getRandomValueFromRange(0, 10));
+      head += to_string(taskValues[0]);
       head += " exists in the tree below\n";
-      break;
+      return;
     }
-    default: { return; }
+    case TasksTopics::UPDATE: {
+      taskValues[0] = getRandomValueFromRange(-20, 20);
+      for (int i = 0; i < elementsCount; i++) insert(taskRoot, getRandomValueFromRange(-30, 30));
+
+      head = "\nCheck where node with value ";
+      head += to_string(taskValues[0]);
+      head += " will be after inserting it into the tree from below\n";
+      return;
+    }
+    case TasksTopics::DELETE: {
+      for (int i = 0; i < elementsCount; i++) insert(taskRoot, getRandomValueFromRange(-30, 30));
+
+      head = "\nCheck what the tree will look like after removing node with value ";
+      int* arr = NULL;
+      unsigned arrSize = 0;
+      convertTreeToArray(taskRoot, arr, arrSize);
+      taskValues[0] = arr[rand() % arrSize];
+      head += to_string(taskValues[0]);
+      head += " from it\n";
+      return;
+    }
   }
 }
 
+void generateTaskShortAnswer(int topic, string& head, Node* &taskRoot, int* taskValues) {
+  switch (topic) {
+    case TasksTopics::CREATE: {
+      head = "\nOne of the possible variants of tree\n";
+      int arrSize = taskValues[1] + 1 - taskValues[0];
+      int arr[arrSize] = {0};
+      int idx = 0;
+      for (int i = taskValues[0]; i < taskValues[1] + 1; i++) arr[idx++] = i;
+      arrShuffle(arr, arrSize);
+      for (int i = 0; i < arrSize; i++) insert(taskRoot, arr[i]);
+      return;
+    }
+    case TasksTopics::READ: {
+      if (search(taskValues[0], taskRoot) != NULL) {
+        head = "\nValue ";
+        head += to_string(taskValues[0]);
+        head += " is IN the tree\n";
+      } else {
+        head = "\nValue ";
+        head += to_string(taskValues[0]);
+        head += " is NOT IN the tree\n";
+      }
+      return;
+    }
+    case TasksTopics::UPDATE: {
+      head = "\nTree after inserting\n";
+      insert(taskRoot, taskValues[0]);
+      return;
+    }
+    case TasksTopics::DELETE: {
+      head = "\nTree after deleting\n";
+      del(taskRoot, taskValues[0]);
+      return;
+    }
+  }
+}
+
+void generateTaskAnswer(int topic, string& head, Node* &taskRoot, int* taskValues) {
+  switch (topic) {
+    case TasksTopics::CREATE: {
+      head = "\nOne of the possible variants of tree ";
+      head += "(because you can fill the tree with any value, in any order)\n";
+      return;
+    }
+    case TasksTopics::READ: {
+      if (search(taskValues[0], taskRoot) != NULL) {
+        head = "\nValue ";
+        head += to_string(taskValues[0]);
+        head += " is IN the tree\n";
+      } else {
+        head = "\nValue ";
+        head += to_string(taskValues[0]);
+        head += " is NOT IN the tree\n";
+      }
+      return;
+    }
+    case TasksTopics::UPDATE: {
+      head = "\nTree after inserting node with value ";
+      head += to_string(taskValues[0]);
+      head += " in it\n";
+      insert(taskRoot, taskValues[0]);
+      return;
+    }
+    case TasksTopics::DELETE: {
+      head = "\nTree after deleting node with value ";
+      head += to_string(taskValues[0]);
+      head += " from it\n";
+      del(taskRoot, taskValues[0]);
+      return;
+    }
+  }
+}
+
+
 void writeTasksInFiles(unsigned tasksCount) {
-  // ofstream dbk("outputKey.txt");
-  // ofstream dba("outputAns.txt");
-  ofstream dbt("outputTask.txt");
+  ofstream dbk("outputKey.txt"); // короткие ответы
+  ofstream dba("outputAns.txt"); // полные ответы
+  ofstream dbt("outputTask.txt"); // условия
   if (!dbt.is_open()) {
     cout << '\n' << "Saving error!";
     return;
@@ -383,18 +532,34 @@ void writeTasksInFiles(unsigned tasksCount) {
   
   Node* taskRoot = NULL;
 
-  for (int topic = 0; topic < 4; topic++) { // для разделов задач
+  for (int topic = 0; topic < TASK_TOPICS_COUNT; topic++) { // для разделов задач
     generateTopicHead(topic, topicHead);
     dbt << topicHead;
+    dbk << topicHead;
+    dba << topicHead;
     for (int taskIdx = 0; taskIdx < tasksCount; taskIdx++) { // для задач внутри раздела
-      generateTaskCondition(topic, taskCondition, taskRoot);
+      int taskValues[2] = {0, 0}; // неизвестные, которые используются в задаче
+
+      generateTaskCondition(topic, taskCondition, taskRoot, taskValues);
       dbt << taskCondition;
-      
       if (taskRoot) writeTreeToFile(taskRoot, dbt);
+
+      generateTaskShortAnswer(topic, taskShortAnswer, taskRoot, taskValues);
+      dbk << taskShortAnswer;
+      if (taskRoot) writeTreeToFile(taskRoot, dbk);
+
+      generateTaskAnswer(topic, taskAnswer, taskRoot, taskValues);
+      dba << taskAnswer;
+      if (taskRoot) writeTreeToFile(taskRoot, dba);
+
       destroyTree(taskRoot);
+      taskRoot = NULL;
     }
   }
+  
   dbt.close();
+  dba.close();
+  dbk.close();
 }
 
 int main() {
@@ -438,6 +603,7 @@ int main() {
 
         cin >> chooseType;
         destroyTree(root);
+        root = NULL;
 
         switch (chooseType) {
           case 1: {
